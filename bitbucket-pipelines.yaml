@@ -1,0 +1,17 @@
+definitions:
+  steps:
+    - step: &sync
+        name: Sync Bitbucket Mirror
+        image: alpine/git:latest
+        clone:
+          enabled: false
+        script:
+          - git clone --bare git@bitbucket.org:dieproduktmachergmbh/ai-frontend.git
+          - cd ai-frontend.git
+          - git push --mirror git clone git@bitbucket.org:alclecas/alfred-ai.git
+
+pipelines:
+  branches:
+    main:
+      - step: *sync
+

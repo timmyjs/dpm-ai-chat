@@ -1,0 +1,9 @@
+# Exit husky on CI
+[ -n "$CI" ] && exit 0
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+echo 'Performing checks and auto-fixes before committing'
+
+npx lint-staged
+
+echo '✅ Pre-commit check passed'

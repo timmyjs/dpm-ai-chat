@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  // Further reading:
+  // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+  // https://www.prisma.io/docs/getting-started/setup-prisma/start-from-scratch/mongodb/creating-the-prisma-schema-typescript-mongodb
+  url      = env("DATABASE_URL")
+}
+
+// Necessary for Next auth
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @unique @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? // @db.Text
+  access_token      String? // @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? // @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// User, session and verification token for Authentication
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  image         String
+  name          String
+  createdAt     DateTime  @default(now())
+  emailVerified DateTime? @map("verifiedAt")
+  sessions      Session[]
+  Account       Account?
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime @map("expiresAt")
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime @map("expiresAt")
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Key {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  key           String            @unique
+  lastUsedAt    DateTime
+  ownerEmail    String
+  isPaidKey     Boolean
+  isRateLimited Boolean
+  Conversation  Conversation[]
+  rateLimit     RateLimitReached?
+}
+
+model Conversation {
+  id                 String @id @default(auto()) @map("_id") @db.ObjectId
+  key                Key    @relation(fields: [keyId], references: [id])
+  keyId              String @unique @db.ObjectId
+  chatConversationId String @unique
+  userId             String @unique
+}
+
+model RateLimitReached {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt    DateTime
+  key          Key      @relation(fields: [keyId], references: [id])
+  keyId        String   @unique @db.ObjectId
+  blockedUntil DateTime
+}
